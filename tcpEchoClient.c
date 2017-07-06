@@ -1,10 +1,29 @@
+// @filename tcpEchoClient.c
+// Created by zhaozhang@yxlink.com
+// on 2017/7/6
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/type.h>
+//#include <sys/type.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+int BUFSIZE = 1024;
+
+void DieWithUserMessage(const char *msg, const char *detail){
+    fputs(msg, stderr);
+    fputs(":", stderr);
+    fputs(detail, stderr);
+    fputc('\n', stderr);
+    exit(1);
+}
+
+void DieWithSystemMessage(const char *msg){
+    perror(msg);
+    exit(1);
+}
 
 int SetupTcpClientSocket(const char *host , const char *service){
 	//Tell the system what kind(s) of address info we want 
@@ -22,7 +41,8 @@ int SetupTcpClientSocket(const char *host , const char *service){
 	}
 
 	int sock = -1;
-	for(struct addrinfo *addr = servAddr; addr != NULL; addr = addr->ai_next){
+    struct addrinfo *addr;
+	for(addr = servAddr; addr != NULL; addr = addr->ai_next){
 		//Create a reliable , stream socket using TCP
 		sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 		if(sock < 0){
@@ -43,13 +63,13 @@ int SetupTcpClientSocket(const char *host , const char *service){
 }
 
 int main(int argc, char *argv[]){
-	if(argc < 3 || argv >4){
-		DieWithUserMessage("Parameter(s)", "<Server Address/Name> <Echo Word> 
-		[<Server Port/Service>]");
+	if(argc < 3 || argc >4){
+		DieWithUserMessage("Parameter(s)", "<Server Address/Name> <Echo Word> "
+                "[<Server Port/Service>]");
 	}
 
-	char *server = argc[1];                    //First arg: server address/name
-	char *echoString = argc[2];             // Second arg: string to echo
+	char *server = argv[1];                 //First arg: server address/name
+	char *echoString = argv[2];             // Second arg: string to echo
 	//Third arg(optional): server port/service
 	char *service = (argc == 4) ? argv[3] : "echo";
 
@@ -77,11 +97,11 @@ int main(int argc, char *argv[]){
 		char buffer[BUFSIZE];           // I/O buffer
 		//Receive up to the buffer size (minus 1 to leave space for
 		// a null terminator) bytes from the sender
-                numBytes  = recv(sock, buffer, BUFSIZE -1, 0);
+        numBytes  = recv(sock, buffer, BUFSIZE -1, 0);
 		if(numBytes < 0){
 			DieWithSystemMessage("recv() failed");
 		}
-		else if(numBytes = 0){
+		else if(numBytes == 0){
 			DieWithUserMessage("recv()", "connection closed prematurely");
 		}
 		totalBytesRcvd += numBytes;       //Keep tally of total bytes
